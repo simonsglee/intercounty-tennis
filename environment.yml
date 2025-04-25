@@ -14,4 +14,5 @@ dependencies:
   - ipykernel
   - pip
   - pip:
-      - scikit-learn  # For potential ELO calibration or predictions
+      - scikit-learn
+      - webdriver-manager
