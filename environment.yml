@@ -1,0 +1,17 @@
+name: intercounty_tennis_env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pandas
+  - numpy
+  - selenium
+  - jupyterlab
+  - streamlit
+  - beautifulsoup4
+  - lxml
+  - matplotlib
+  - ipykernel
+  - pip
+  - pip:
+      - scikit-learn  # For potential ELO calibration or predictions
