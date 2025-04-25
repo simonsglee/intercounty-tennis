@@ -16,3 +16,4 @@ dependencies:
   - pip:
       - scikit-learn
       - webdriver-manager
+      - gender_guesser
