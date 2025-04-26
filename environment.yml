@@ -12,6 +12,7 @@ dependencies:
   - lxml
   - matplotlib
   - ipykernel
+  - pytest
   - pip
   - pip:
       - scikit-learn
