@@ -1,0 +1,22 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Conda environment folders (if you ever have local ones)
+env/
+.venv/
+venv/
+
+# VSCode settings (optional but good)
+.vscode/
+
+# Spyder project files (if any)
+.spyproject/
+
+# Jupyter Notebook checkpoint files (if you ever use .ipynb)
+.ipynb_checkpoints/
+
+# Data files
+data/
