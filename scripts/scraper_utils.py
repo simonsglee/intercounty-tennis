@@ -28,22 +28,6 @@ def decode_player_id(href):
             return p_encoded[0]
     return "N/A"
 
-def count_games(score_str):
-    score_str = re.sub(r"\[.*?\]", "", score_str)
-    sets = score_str.split(",")
-    home_games = 0
-    away_games = 0
-    for s in sets:
-        s = s.strip()
-        if "-" in s:
-            try:
-                home, away = map(int, s.split("-"))
-                home_games += home
-                away_games += away
-            except ValueError:
-                pass
-    return home_games, away_games
-
 def extract_all_matches(html, season, division):
     soup = BeautifulSoup(html, "html.parser")
     fixtures = soup.select("div.match_results_table")
@@ -79,12 +63,19 @@ def extract_all_matches(html, season, division):
                 if score == "N/A" and len(home_names) == 0 and len(away_names) == 0:
                     continue
 
-                home_text = block.select_one("div.team_name").text if block.select_one("div.team_name") else ""
-                away_text = block.select_one("div.team_name2").text if block.select_one("div.team_name2") else ""
+                # Detect special outcomes by scanning <span> only
+                default_span = block.find("span", string=lambda t: t and ("Default" in t or "Forfeit" in t))
+                retired_span = block.find("span", string=lambda t: t and "Retired" in t)
 
-                home_defaulted = "By Default" in home_text or "By Forfeit" in home_text
-                away_defaulted = "By Default" in away_text or "By Forfeit" in away_text
-                is_default = home_defaulted or away_defaulted
+                is_default = default_span is not None
+                is_retired = retired_span is not None
+
+                # Detect winners
+                home_won_tag = block.select_one("div.points img")
+                away_won_tag = block.select_one("div.points2 img")
+
+                home_won = home_won_tag is not None
+                away_won = away_won_tag is not None
 
                 match_record = {
                     "Season": season,
@@ -94,39 +85,27 @@ def extract_all_matches(html, season, division):
                     "Away Team": away_team,
                     "Line": line_number,
                     "Score": score,
-                    "Defaulted": is_default
+                    "Defaulted": is_default,
+                    "Retired": is_retired,
+                    "Home Won": home_won,
+                    "Away Won": away_won
                 }
 
-                if is_default:
-                    if len(home_names) == 2:
-                        match_record.update({
-                            "Home Player 1": home_names[0],
-                            "Home ID 1": home_ids[0],
-                            "Home Player 2": home_names[1],
-                            "Home ID 2": home_ids[1],
-                        })
-                    if len(away_names) == 2:
-                        match_record.update({
-                            "Away Player 1": away_names[0],
-                            "Away ID 1": away_ids[0],
-                            "Away Player 2": away_names[1],
-                            "Away ID 2": away_ids[1],
-                        })
-                else:
-                    if len(home_names) == 2 and len(away_names) == 2:
-                        home_games, away_games = count_games(score)
-                        match_record.update({
-                            "Home Player 1": home_names[0],
-                            "Home ID 1": home_ids[0],
-                            "Home Player 2": home_names[1],
-                            "Home ID 2": home_ids[1],
-                            "Away Player 1": away_names[0],
-                            "Away ID 1": away_ids[0],
-                            "Away Player 2": away_names[1],
-                            "Away ID 2": away_ids[1],
-                            "Home Games Won": home_games,
-                            "Away Games Won": away_games,
-                        })
+                if len(home_names) == 2:
+                    match_record.update({
+                        "Home Player 1": home_names[0],
+                        "Home ID 1": home_ids[0],
+                        "Home Player 2": home_names[1],
+                        "Home ID 2": home_ids[1],
+                    })
+
+                if len(away_names) == 2:
+                    match_record.update({
+                        "Away Player 1": away_names[0],
+                        "Away ID 1": away_ids[0],
+                        "Away Player 2": away_names[1],
+                        "Away ID 2": away_ids[1],
+                    })
 
                 all_matches.append(match_record)
                 line_number += 1
@@ -154,7 +133,7 @@ def scrape_season_divisions(entry_url):
         driver.quit()
         return
 
-    os.makedirs("data/processed", exist_ok=True)
+    os.makedirs("data/raw", exist_ok=True)
 
     group_dropdown = Select(driver.find_element(By.ID, "divgs_list"))
     group_dropdown.select_by_index(1)
@@ -179,7 +158,7 @@ def scrape_season_divisions(entry_url):
 
             if matches:
                 df = pd.DataFrame(matches)
-                filename = f"data/processed/ic_mixed_matches_{clean_filename(season)}_{clean_filename(division)}.csv"
+                filename = f"data/raw/ic_mixed_matches_{clean_filename(season)}_{clean_filename(division)}.csv"
                 df.to_csv(filename, index=False)
                 print(f"   ✅ Saved {len(df)} matches → {filename}")
             else:
