@@ -13,6 +13,8 @@ dependencies:
   - matplotlib
   - ipykernel
   - pytest
+  - rapidfuzz
+  - pyarrow
   - pip
   - pip:
       - scikit-learn
